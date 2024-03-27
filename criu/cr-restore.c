@@ -1796,6 +1796,10 @@ static int create_children_and_session(void)
 	return 0;
 }
 
+static pid_t my_getpid(void) {
+	return syscall(SYS_getpid);
+}
+
 static int restore_task_with_children(void *_arg)
 {
 	struct cr_clone_arg *ca = _arg;
@@ -1804,7 +1808,7 @@ static int restore_task_with_children(void *_arg)
 
 	current = ca->item;
 
-	pid = getpid();
+	pid = my_getpid();
 	if (pid < vpid(current)) {
 		/* Expected pid mismatch, communcate back */
 		exit(NOT_THAT_PID_ECODE);
@@ -1830,7 +1834,7 @@ static int restore_task_with_children(void *_arg)
 		pr_debug("PID2: real %d virt %d\n", current->pid->real, vpid(current));
 	}
 
-	pid = getpid();
+	pid = my_getpid();
 	if (vpid(current) != pid) {
 		pr_err("Pid %d do not match expected %d\n", pid, vpid(current));
 		set_task_cr_err(EEXIST);
@@ -1932,7 +1936,7 @@ static int restore_task_with_children(void *_arg)
 
 	if (fault_injected(FI_RESTORE_ROOT_ONLY)) {
 		pr_info("fault: Restore root task failure!\n");
-		kill(getpid(), SIGKILL);
+		kill(my_getpid(), SIGKILL);
 	}
 
 	if (open_transport_socket())
@@ -2223,7 +2227,7 @@ static int prepare_userns_hook(void)
 	 * inside container due to permissions.
 	 * But you still can set this value if it was unset.
 	 */
-	saved_loginuid = parse_pid_loginuid(getpid(), &ret, false);
+	saved_loginuid = parse_pid_loginuid(my_getpid(), &ret, false);
 	if (ret < 0)
 		return -1;
 
